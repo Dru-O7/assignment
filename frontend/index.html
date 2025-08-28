@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuberai Gold Assistant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #0056b3;
+            text-align: center;
+        }
+        .chat-window {
+            border: 1px solid #ccc;
+            height: 300px;
+            overflow-y: scroll;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background-color: #e9e9e9;
+        }
+        .chat-message {
+            margin-bottom: 10px;
+        }
+        .user-message {
+            text-align: right;
+            color: #007bff;
+        }
+        .ai-message {
+            text-align: left;
+            color: #28a745;
+        }
+        .input-group {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .input-group input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .input-group button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .input-group button:hover {
+            background-color: #0056b3;
+        }
+        .purchase-section {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #007bff;
+            border-radius: 8px;
+            background-color: #e7f3ff;
+        }
+        .purchase-section h2 {
+            color: #007bff;
+            text-align: center;
+        }
+        .purchase-input {
+            display: flex;
+            margin-top: 10px;
+        }
+        .purchase-input input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #007bff;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .purchase-input button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .purchase-input button:hover {
+            background-color: #218838;
+        }
+        .error-message {
+            color: red;
+            margin-top: 10px;
+        }
+        .history-section {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            background-color: #fffbeb;
+        }
+        .history-section h2 {
+            color: #ffc107;
+            text-align: center;
+        }
+        #history-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        #history-list li {
+            background-color: #fff;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gold Investment AI Assistant</h1>
+
+        <div class="chat-window" id="chat-window">
+            <!-- Chat messages will appear here -->
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="user-query" placeholder="Ask about gold investment...">
+            <button onclick="sendQuery()">Send</button>
+        </div>
+
+        <div class="purchase-section" id="purchase-section" style="display: none;">
+            <h2>Purchase Digital Gold</h2>
+            <div class="purchase-input">
+                <input type="number" id="amount-inr" placeholder="Amount in INR" min="1">
+                <button onclick="purchaseGold()">Buy Gold</button>
+            </div>
+            <p id="purchase-status"></p>
+        </div>
+
+        <div class="input-group">
+            <button onclick="fetchHistory()">View Purchase History</button>
+        </div>
+
+        <div class="history-section" id="history-section" style="display: none;">
+            <h2>Your Gold Purchase History</h2>
+            <ul id="history-list"></ul>
+        </div>
+
+        <p id="error-message" class="error-message"></p>
+    </div>
+
+    <script>
+        const chatWindow = document.getElementById('chat-window');
+        const userQueryInput = document.getElementById('user-query');
+        const purchaseSection = document.getElementById('purchase-section');
+        const amountInrInput = document.getElementById('amount-inr');
+        const purchaseStatus = document.getElementById('purchase-status');
+        const errorMessage = document.getElementById('error-message');
+        const historySection = document.getElementById('history-section');
+        const historyList = document.getElementById('history-list');
+
+        const API_BASE_URL = "http://127.0.0.1:8000"; // Replace with your Render URL when deployed
+        let userId = 1; // Hardcoded user ID for simplicity
+
+        function appendMessage(sender, message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('chat-message', `${sender}-message`);
+            messageDiv.textContent = message;
+            chatWindow.appendChild(messageDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll to bottom
+        }
+
+        async function sendQuery() {
+            const query = userQueryInput.value.trim();
+            if (!query) return;
+
+            appendMessage('user', `You: ${query}`);
+            userQueryInput.value = '';
+            errorMessage.textContent = '';
+            purchaseSection.style.display = 'none'; // Hide purchase section on new query
+            historySection.style.display = 'none'; // Hide history section on new query
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/ask_kuberai`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ user_id: userId, query: query }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                appendMessage('ai', `Kuberai: ${data.response}`);
+
+                if (data.action === "PROMPT_PURCHASE") {
+                    purchaseSection.style.display = 'block';
+                    purchaseStatus.textContent = '';
+                } else if (data.action === "SHOW_HISTORY") {
+                    showHistory(data.history);
+                }
+            } catch (error) {
+                console.error('Error sending query:', error);
+                errorMessage.textContent = `Error: ${error.message}. Please try again.`;
+            }
+        }
+
+        async function purchaseGold() {
+            const amountInr = parseFloat(amountInrInput.value);
+            if (isNaN(amountInr) || amountInr <= 0) {
+                purchaseStatus.textContent = "Please enter a valid amount.";
+                purchaseStatus.style.color = "red";
+                return;
+            }
+
+            purchaseStatus.textContent = "Processing purchase...";
+            purchaseStatus.style.color = "black";
+            errorMessage.textContent = '';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/purchase_gold`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ user_id: userId, amount_inr: amountInr }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                purchaseStatus.textContent = `${data.message} Transaction ID: ${data.transaction_id}, Gold Purchased: ${data.gold_grams_purchased.toFixed(4)} grams.`;
+                purchaseStatus.style.color = "green";
+                amountInrInput.value = ''; // Clear input after successful purchase
+
+                // Optionally, refresh history after purchase
+                // showHistory(data.history);
+            } catch (error) {
+                console.error('Error purchasing gold:', error);
+                purchaseStatus.textContent = `Error: ${error.message}. Please try again.`;
+                purchaseStatus.style.color = "red";
+            }
+        }
+
+        function showHistory(history) {
+            historySection.style.display = 'block';
+            historyList.innerHTML = ''; // Clear existing history
+
+            if (history.length === 0) {
+                historyList.innerHTML = '<li>No transaction history found.</li>';
+                return;
+            }
+
+            history.forEach(item => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `Transaction ID: ${item.transaction_id}, Amount: ${item.amount_inr} INR, Gold: ${item.gold_grams_purchased.toFixed(4)} grams, Date: ${new Date(item.timestamp).toLocaleString()}`;
+                historyList.appendChild(listItem);
+            });
+        }
+
+        async function fetchHistory() {
+            historySection.style.display = 'block';
+            errorMessage.textContent = '';
+            historyList.innerHTML = '<li>Loading history...</li>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/history/${userId}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                historyList.innerHTML = ''; // Clear loading message
+
+                if (data.length === 0) {
+                    historyList.innerHTML = '<li>No purchase history found.</li>';
+                    return;
+                }
+
+                data.forEach(purchase => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `Date: ${new Date(purchase.timestamp).toLocaleString()} - Amount: ₹${purchase.amount_inr.toFixed(2)} - Gold: ${purchase.gold_grams.toFixed(4)}g`;
+                    historyList.appendChild(listItem);
+                });
+
+            } catch (error) {
+                console.error('Error fetching history:', error);
+                historyList.innerHTML = `<li>Error: ${error.message}. Please try again.</li>`;
+                historyList.style.color = "red";
+            }
+        }
+
+        // Initial message from Kuberai
+        window.onload = () => {
+            appendMessage('ai', 'Kuberai: Hello! How can I help you with gold investment today?');
+        };
+    </script>
+</body>
+</html>
