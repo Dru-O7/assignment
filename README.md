@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# assignment
-=======
 # AI-Powered Gold Investment Assistant
 
 ## Project Description
@@ -97,5 +94,3 @@ python app/clear_db.py
 ## Deployment
 
 The entire system is designed for deployment on Render. Ensure your `GEMINI_API_KEY` is set as a secret environment variable on the Render platform.
-
->>>>>>> f054b76 (Initial commit)
