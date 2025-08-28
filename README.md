@@ -47,7 +47,11 @@ This project creates a two-API backend system that emulates the Kuberai workflow
     ```
     The application will be available at `http://127.0.0.1:8000`.
 2. **Open the frontend:**
-    Open the `frontend/index.html` file in your web browser to interact with the application.
+    Run the following command to open the frontend in your default browser:
+    ```bash
+    open frontend/index.html
+    ```
+    Or manually open the `frontend/index.html` file in your web browser to interact with the application.
 
 ### 4. Resetting the Database
 To clear all data from the database, run the following command from the project root:
